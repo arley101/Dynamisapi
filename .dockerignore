@@ -35,7 +35,7 @@ docs/
 # Tests y archivos de prueba
 tests/
 *.test.py
-
+arbol_completo.txt
 # Archivos temporales, logs y cachés
 *.log
 *.tmp
