@@ -31,7 +31,7 @@ docs/
 *.docx
 *.xlsx
 *.csv
-
+*.arbol_completo.txt
 # Tests y archivos de prueba
 tests/
 *.test.py

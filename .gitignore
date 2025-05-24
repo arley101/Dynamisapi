@@ -49,8 +49,7 @@ docs/
 *.pdf
 *.docx
 *.xlsx
-*.csv
-
+*.carbol_completo.txt
 # Tests y datos de pruebas
 tests/
 *.test.py
