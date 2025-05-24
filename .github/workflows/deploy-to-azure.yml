@@ -3,8 +3,8 @@ name: Build, Push, and Deploy Docker Image to Azure App Service - EliteDynamicsA
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main # O tu rama de despliegue principal
+  workflow_dispatch: # Permite la ejecución manual
 
 env:
   AZURE_APP_SERVICE_NAME: "elitedynamicsapi"
@@ -31,10 +31,9 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: 'Log in to Azure Container Registry'
-      uses: azure/docker-login@v1
-      with:
-        login-server: ${{ env.ACR_LOGIN_SERVER }}
+    - name: 'Log in to Azure Container Registry via CLI'
+      run: |
+        az acr login --name elitedynamicsregistry
 
     - name: 'Build and push Docker image to ACR'
       id: build-image
@@ -47,7 +46,7 @@ jobs:
         docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}
 
         echo "Pushing Docker image ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest"
-        docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest}
+        docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
 
         echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
 
