@@ -11,27 +11,28 @@ WORKDIR /code
 
 COPY requirements.txt .
 
-# Instalar dependencias, asegurando que pip esté actualizado
+# Instalar dependencias y verificar gunicorn/uvicorn
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r requirements.txt && \
+    echo "--- Verificando gunicorn (debería estar en /usr/local/bin/gunicorn) ---" && \
+    ls -l /usr/local/bin/gunicorn && \
+    echo "--- Ejecutando gunicorn --version ---" && \
+    /usr/local/bin/gunicorn --version && \
+    echo "--- Verificando uvicorn (debería estar en /usr/local/bin/uvicorn) ---" && \
+    ls -l /usr/local/bin/uvicorn && \
+    echo "--- Ejecutando uvicorn --version ---" && \
+    /usr/local/bin/uvicorn --version && \
+    echo "--- Listando paquetes instalados (pip list) ---" && \
+    pip list && \
+    echo "--- Contenido de /usr/local/bin/ ---" && \
+    ls -l /usr/local/bin
 
 COPY ./app /code/app
-# Si tienes otros directorios en la raíz que tu app necesita (ej. 'static'), cópialos aquí:
-# COPY ./static /code/static
 
 EXPOSE 8000
 
-# Para depurar si gunicorn o uvicorn no se encuentran:
-# Descomenta la siguiente línea y comenta el CMD original para probar.
-# Esta línea intentará mostrar las versiones, si falla aquí, el problema es la instalación.
-# CMD ["sh", "-c", "echo 'Checking gunicorn...' && gunicorn --version && echo 'Checking uvicorn...' && uvicorn --version && echo 'Checks done. Will not start app.' && sleep infinity"]
-
-# Comando de Producción
-# Usar un entrypoint para gunicorn y pasar los argumentos de la app como CMD puede ser más flexible
-# Pero para este caso, un CMD directo es suficiente y más común con App Service.
-# Asegurarse que gunicorn y uvicorn estén en el PATH del contenedor
-# El comando se ejecutará como: gunicorn -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 app.main:app --log-level debug --access-logfile - --error-logfile -
-CMD ["gunicorn", \
+# Comando de inicio usando la ruta absoluta a gunicorn
+CMD ["/usr/local/bin/gunicorn", \
      "-w", "2", \
      "-k", "uvicorn.workers.UvicornWorker", \
      "--bind", "0.0.0.0:8000", \
