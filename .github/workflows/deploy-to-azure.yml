@@ -31,10 +31,9 @@ jobs:
         tenant-id: 3cc25eaa-8df6-4808-beae-97dbc8f40f75
         subscription-id: 85e07757-4fb1-4a7a-ad3e-053ff94ab88c
 
-    - name: 'Log in to Azure Container Registry'
-      uses: azure/docker-login@v1
-      with:
-        login-server: elitedynamicsregistry.azurecr.io
+    - name: 'Log in to Azure Container Registry via CLI'
+      run: |
+        az acr login --name elitedynamicsregistry
 
     - name: 'Build and push Docker image to ACR'
       run: |
@@ -46,7 +45,7 @@ jobs:
       uses: azure/webapps-deploy@v3
       with:
         app-name: elitedynamicsapi
-        resource-group-name: memorycognitiva
+        resource-group-name: Memorycognitiva
         images: 'elitedynamicsregistry.azurecr.io/elitedynamicsapi:${{ github.sha }}'
 
     - name: 'Azure logout'
