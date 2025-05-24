@@ -1,9 +1,16 @@
-name: Azure Container Deployment - EliteDynamics
+name: Build, Push, and Deploy Docker Image to Azure App Service - EliteDynamicsAPI
 
 on:
   push:
     branches:
-      - main
+      - main # O tu rama de despliegue principal
+  workflow_dispatch: # Permite la ejecución manual
+
+env:
+  AZURE_APP_SERVICE_NAME: "elitedynamicsapi"
+  AZURE_RESOURCE_GROUP: "Memorycognitiva"
+  ACR_LOGIN_SERVER: "elitedynamicsregistry.azurecr.io"
+  IMAGE_NAME: "elitedynamicsapi"
 
 permissions:
   id-token: write
@@ -12,35 +19,39 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
 
-    - name: Azure login with OIDC
-      uses: azure/login@v1
+    - name: 'Log in to Azure with OIDC'
+      uses: azure/login@v2
       with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        client-id: 7ba8e830-0547-49f3-9c59-eba86729b326
+        tenant-id: 3cc25eaa-8df6-4808-beae-97dbc8f40f75
+        subscription-id: 85e07757-4fb1-4a7a-ad3e-053ff94ab88c
 
-    - name: Azure Container Registry login
-      run: |
-        az acr login --name elitedynamicsregistry
+    - name: 'Log in to Azure Container Registry'
+      uses: azure/docker-login@v1
+      with:
+        login-server: elitedynamicsregistry.azurecr.io
 
-    - name: Build and push Docker image to ACR
+    - name: 'Build and push Docker image to ACR'
       run: |
-        docker build -t elitedynamicsregistry.azurecr.io/elitedynamicsapi:latest .
+        docker build . -t elitedynamicsregistry.azurecr.io/elitedynamicsapi:${{ github.sha }} -t elitedynamicsregistry.azurecr.io/elitedynamicsapi:latest
+        docker push elitedynamicsregistry.azurecr.io/elitedynamicsapi:${{ github.sha }}
         docker push elitedynamicsregistry.azurecr.io/elitedynamicsapi:latest
 
-    - name: Configure web app to use ACR image
-      run: |
-        az webapp config container set \
-          --name elitedynamicsapi \
-          --resource-group memorycognitiva \
-          --docker-custom-image-name elitedynamicsregistry.azurecr.io/elitedynamicsapi:latest \
-          --docker-registry-server-url https://elitedynamicsregistry.azurecr.io
+    - name: 'Deploy to Azure App Service'
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: elitedynamicsapi
+        resource-group-name: memorycognitiva
+        images: 'elitedynamicsregistry.azurecr.io/elitedynamicsapi:${{ github.sha }}'
 
-    - name: Restart web app
+    - name: 'Azure logout'
+      if: always()
       run: |
-        az webapp restart --name elitedynamicsapi --resource-group memorycognitiva
+        az logout
+        az cache purge
