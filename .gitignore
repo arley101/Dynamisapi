@@ -1,0 +1,60 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+.DS_Store
+*.env
+local.settings.json
+.python_packages/
+# Entorno virtual
+.venv/
+
+# Cachés de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Configuración de IDEs y sistema
+.vscode/
+.idea/
+.DS_Store
+
+# Archivos sensibles y de configuración
+.env
+.env.*
+local.settings.json
+
+# Archivos de logs y temporales
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
+*.~*
+
+# Archivos de build y distribución
+*.egg-info/
+dist/
+build/
+coverage/
+
+# Documentación y recursos internos no versionables
+*.md
+docs/
+*.pdf
+*.docx
+*.xlsx
+*.csv
+
+# Tests y datos de pruebas
+tests/
+*.test.py
+
+# Bases de datos locales
+*.sqlite3
+*.db

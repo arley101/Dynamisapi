@@ -1,0 +1,56 @@
+# Entorno virtual
+.venv/
+
+# Cachés de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Configuración del editor y sistema
+.vscode/
+.idea/
+.DS_Store
+
+# Archivos sensibles o locales
+.env
+.env.*
+local.settings.json
+
+# Archivos de configuración de Docker y Git
+Dockerfile
+.dockerignore
+.git/
+.gitignore
+
+# Documentación y recursos no necesarios para la imagen
+README.md
+*.md
+docs/
+*.pdf
+*.docx
+*.xlsx
+*.csv
+
+# Tests y archivos de prueba
+tests/
+*.test.py
+
+# Archivos temporales, logs y cachés
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
+*.~*
+
+# Carpeta raíz de ejecución o archivos adicionales que no forman parte del build
+*.sqlite3
+*.db
+*.tar
+*.zip
+*.egg-info/
+dist/
+build/
+coverage/

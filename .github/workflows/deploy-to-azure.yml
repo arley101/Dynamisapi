@@ -1,0 +1,56 @@
+name: Build and Deploy Docker Image to Azure App Service (elitedynamicsapi)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_APP_SERVICE_NAME: "elitedynamicsapi"
+  AZURE_RESOURCE_GROUP: "memorycognitiva"
+  ACR_LOGIN_SERVER: "elitedynamicsregistry.azurecr.io"
+  IMAGE_NAME: "elitedynamicsapi"
+
+jobs:
+  build-and-deploy-docker-image:
+    runs-on: ubuntu-latest
+    environment: production
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to Azure with OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Login to Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.ACR_LOGIN_SERVER }}
+
+    - name: Build and Push Docker image to ACR
+      run: |
+        docker build . -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ env.AZURE_APP_SERVICE_NAME }}
+        resource-group-name: ${{ env.AZURE_RESOURCE_GROUP }}
+        images: '${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}'
+
+    - name: Azure logout
+      run: |
+        az logout
+        az cache purge
+      if: always()
