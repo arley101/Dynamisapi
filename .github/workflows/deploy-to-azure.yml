@@ -51,11 +51,26 @@ jobs:
         echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
 
     - name: 'Deploy to Azure App Service'
+      id: deploy
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ env.AZURE_APP_SERVICE_NAME }}
         resource-group-name: ${{ env.AZURE_RESOURCE_GROUP }}
         images: '${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.build-image.outputs.image_tag }}'
+        startup-command: '' # ASEGURA QUE EL COMANDO DE INICIO QUEDE VACÍO
+
+    - name: 'Verify App Service Startup Command'
+      run: |
+        echo "Waiting 30 seconds for App Service to potentially finalize configuration..."
+        sleep 30
+        echo "Verifying appCommandLine..."
+        STARTUP_CMD=$(az webapp config show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_APP_SERVICE_NAME }} --query appCommandLine --output tsv)
+        echo "Current appCommandLine is: '$STARTUP_CMD'"
+        if [[ "$STARTUP_CMD" != "" && "$STARTUP_CMD" != "null" ]]; then
+          echo "::error::appCommandLine is NOT empty after deployment with startup-command:''. It is: '$STARTUP_CMD'."
+        else
+          echo "appCommandLine is empty or null as expected. Dockerfile CMD should be used."
+        fi
 
     - name: 'Azure logout'
       if: always()
