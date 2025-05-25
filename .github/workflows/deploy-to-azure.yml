@@ -1,79 +1,36 @@
-name: Build, Push, and Deploy Docker Image to Azure App Service - EliteDynamicsAPI
+name: Deploy Python App to Azure Web App - EliteDynamicsAPI
 
 on:
   push:
     branches:
-      - main # O tu rama de despliegue principal
-  workflow_dispatch: # Permite la ejecución manual
-
-env:
-  AZURE_APP_SERVICE_NAME: "elitedynamicsapi"
-  AZURE_RESOURCE_GROUP: "memorycognitiva"
-  ACR_LOGIN_SERVER: "elitedynamicsregistry.azurecr.io"
-  IMAGE_NAME: "elitedynamicsapi"
-
-permissions:
-  id-token: write
-  contents: read
+      - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 'Checkout GitHub Action'
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: 'Log in to Azure with OIDC'
-      uses: azure/login@v2
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: 'Log in to Azure Container Registry via CLI'
-      run: |
-        az acr login --name elitedynamicsregistry
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: 'Build and push Docker image to ACR'
-      id: build-image
-      run: |
-        IMAGE_TAG=${{ github.sha }}
-        echo "Building Docker image ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
-        docker build . -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} -t ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+      - name: Zip application
+        run: |
+          zip -r release.zip .
 
-        echo "Pushing Docker image ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
-        docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}
-
-        echo "Pushing Docker image ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest"
-        docker push ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
-
-        echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-
-    - name: 'Deploy to Azure App Service'
-      id: deploy
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: ${{ env.AZURE_APP_SERVICE_NAME }}
-        resource-group-name: ${{ env.AZURE_RESOURCE_GROUP }}
-        images: '${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.build-image.outputs.image_tag }}'
-        startup-command: '' # <--- ASEGURA QUE EL COMANDO DE INICIO QUEDE VACÍO
-
-    - name: 'Verify App Service Startup Command'
-      run: |
-        echo "Waiting 30 seconds for App Service to potentially finalize configuration..."
-        sleep 30
-        echo "Verifying appCommandLine..."
-        STARTUP_CMD=$(az webapp config show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_APP_SERVICE_NAME }} --query appCommandLine --output tsv)
-        echo "Current appCommandLine is: '$STARTUP_CMD'"
-        if [[ "$STARTUP_CMD" != "" && "$STARTUP_CMD" != "null" ]]; then
-          echo "::error::appCommandLine is NOT empty after deployment with startup-command:''. It is: '$STARTUP_CMD'."
-        else
-          echo "appCommandLine is empty or null as expected. Dockerfile CMD should be used."
-        fi
-
-    - name: 'Azure logout'
-      if: always()
-      run: |
-        az logout
-        az cache purge
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: elitedynamicsapi
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_795063DE34594158879BF4E0D0607C }}
+          package: release.zip
